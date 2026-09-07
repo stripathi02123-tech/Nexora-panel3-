@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-REPO_RAW="https://raw.githubusercontent.com/stripathi02123-tech/Nexora-panel3/main/node-system/install-node.sh"
+REPO_RAW="https://raw.githubusercontent.com/stripathi02123-tech/Nexora-panel3-/main/node-system/install-node.sh"
 TMP_FILE="$(mktemp /tmp/nexora-node-install.XXXXXX.sh)"
 trap 'rm -f "$TMP_FILE"' EXIT
 
@@ -19,9 +19,9 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 1
 fi
 
-CACHE_BUSTER="$(date +%s)"
+CACHE_BUSTER="$(date +%s%N)"
 echo "Downloading current Nexora Node Agent installer..."
-curl -fL --retry 3 --connect-timeout 10 --max-time 120 \
+curl -fL --retry 5 --retry-all-errors --connect-timeout 10 --max-time 120 \
   "${REPO_RAW}?v=${CACHE_BUSTER}" -o "$TMP_FILE"
 
 if [[ ! -s "$TMP_FILE" ]]; then
