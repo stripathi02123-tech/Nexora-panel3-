@@ -12,7 +12,7 @@
 # - Panel data under /opt/nexora and /opt/nexora-backups will be deleted.
 #
 # Run:
-#   curl -fsSL https://raw.githubusercontent.com/stripathi02123-tech/Nexora-panel3/main/uninstall-panel.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/stripathi02123-tech/Nexora-panel3-/main/uninstall-panel.sh | sudo bash
 #
 # Or:
 #   sudo bash uninstall-panel.sh
@@ -87,104 +87,71 @@ fi
 echo
 line
 
-# ── 1. stop panel process/service ─────────────────────────────────────────
 info 'Stopping Nexora Panel...'
-if command -v systemctl >/dev/null 2>&1; then
+if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
   systemctl stop "$SERVICE_NAME" 2>/dev/null || true
   systemctl disable "$SERVICE_NAME" 2>/dev/null || true
 fi
 
 if [[ -f "$PID_FILE" ]]; then
   PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-  if [[ -n "${PID:-}" ]] && kill -0 "$PID" 2>/dev/null; then
+  if [[ "$PID" =~ ^[0-9]+$ ]] && kill -0 "$PID" 2>/dev/null; then
     kill "$PID" 2>/dev/null || true
     sleep 1
     kill -9 "$PID" 2>/dev/null || true
   fi
 fi
+pkill -u "$SERVICE_USER" -f '/opt/nexora/server/dist/index.js' 2>/dev/null || true
 ok 'Panel process stopped.'
 
-# ── 2. remove systemd service ─────────────────────────────────────────────
-info 'Removing systemd service...'
+info 'Removing service definition...'
 rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl daemon-reload || true
+if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+  systemctl daemon-reload 2>/dev/null || true
   systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
 fi
-ok 'Systemd service removed.'
+ok 'Service definition removed.'
 
-# ── 3. remove Nginx panel site only ────────────────────────────────────────
 info 'Removing Nexora Nginx configuration...'
 rm -f "$NGINX_LINK" "$NGINX_SITE"
 if command -v nginx >/dev/null 2>&1; then
-  if nginx -t >/dev/null 2>&1; then
-    if command -v systemctl >/dev/null 2>&1; then
-      systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
-    fi
+  nginx -t >/dev/null 2>&1 || warn 'Nginx config test failed after removing Nexora site.'
+  if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+    systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
   else
-    warn 'Nginx configuration test failed after removal; other Nginx config may require attention.'
+    nginx -s reload 2>/dev/null || true
   fi
 fi
 ok 'Nexora Nginx site removed.'
 
-# ── 4. remove panel files, database, node_modules, and generated config ───
 info 'Removing Nexora Panel files and database...'
 rm -rf "$INSTALL_DIR"
 ok 'Panel installation directory removed.'
 
-# ── 5. remove panel backups ────────────────────────────────────────────────
 info 'Removing Nexora Panel backups...'
 rm -rf "$BACKUP_DIR"
 ok 'Panel backup directory removed.'
 
-# ── 6. remove panel logs ───────────────────────────────────────────────────
 info 'Removing Nexora Panel logs...'
 rm -rf "$LOG_DIR"
 ok 'Panel log directory removed.'
 
-# ── 7. remove service user ─────────────────────────────────────────────────
 info 'Removing Nexora service user...'
 if id -u "$SERVICE_USER" >/dev/null 2>&1; then
   userdel "$SERVICE_USER" 2>/dev/null || true
 fi
 ok 'Panel service user removed.'
 
-# ── 8. final verification ──────────────────────────────────────────────────
 line
-info 'Running final verification...'
-
-if [[ -e "$INSTALL_DIR" ]]; then warn "$INSTALL_DIR still exists."; else ok "$INSTALL_DIR removed."; fi
-if [[ -e "$BACKUP_DIR" ]]; then warn "$BACKUP_DIR still exists."; else ok "$BACKUP_DIR removed."; fi
-if [[ -e "$LOG_DIR" ]]; then warn "$LOG_DIR still exists."; else ok "$LOG_DIR removed."; fi
-if [[ -e "/etc/systemd/system/${SERVICE_NAME}.service" ]]; then warn 'Systemd service file still exists.'; else ok 'Systemd service file removed.'; fi
-if [[ -e "$NGINX_SITE" || -e "$NGINX_LINK" ]]; then warn 'Nexora Nginx site files still exist.'; else ok 'Nexora Nginx site removed.'; fi
+info 'Final verification...'
+[[ ! -e "$INSTALL_DIR" ]] && ok "$INSTALL_DIR removed." || warn "$INSTALL_DIR still exists."
+[[ ! -e "$BACKUP_DIR" ]] && ok "$BACKUP_DIR removed." || warn "$BACKUP_DIR still exists."
+[[ ! -e "$LOG_DIR" ]] && ok "$LOG_DIR removed." || warn "$LOG_DIR still exists."
+[[ ! -e "/etc/systemd/system/${SERVICE_NAME}.service" ]] && ok 'Service file removed.' || warn 'Service file still exists.'
+[[ ! -e "$NGINX_SITE" && ! -e "$NGINX_LINK" ]] && ok 'Nexora Nginx site removed.' || warn 'Nexora Nginx site still exists.'
 if id -u "$SERVICE_USER" >/dev/null 2>&1; then warn "User $SERVICE_USER still exists."; else ok "User $SERVICE_USER removed."; fi
-
-# Explicitly report the node agent status so it is clear that it was preserved.
-if [[ -d /opt/nexora-node ]] || systemctl list-unit-files 2>/dev/null | grep -q '^nexora-node.service'; then
-  info 'Nexora Node Agent was preserved.'
-fi
+if [[ -d /opt/nexora-node ]]; then info 'Nexora Node Agent preserved at /opt/nexora-node.'; fi
 
 echo
-line
-echo -e "${GREEN} NEXORA PANEL UNINSTALLED ✅${NC}"
-line
-echo
-echo 'Removed:'
-echo '  • Nexora Panel application'
-echo '  • Panel database and generated configuration'
-echo '  • npm dependencies inside the panel'
-echo '  • Nexora systemd service'
-echo '  • Nexora Nginx site configuration'
-echo '  • /var/log/nexora'
-echo '  • /opt/nexora-backups'
-echo '  • nexora service user'
-echo
-echo 'Preserved:'
-echo '  • /opt/nexora-node (Node Agent)'
-echo '  • Node.js / npm'
-echo '  • Nginx package'
-echo '  • Git, Python and other system packages'
-echo
-echo 'Reboot is normally not required.'
+echo -e "${GREEN}NEXORA PANEL UNINSTALLED ✅${NC}"
 line
