@@ -10,6 +10,18 @@ import { auditLog } from '../middleware/audit';
 
 const router = Router();
 
+const AGENT_SECRET_BYTES = 32;
+const AGENT_SECRET_MIN_LENGTH = AGENT_SECRET_BYTES * 2;
+
+function generateAgentSecret(): string {
+  return randomBytes(AGENT_SECRET_BYTES).toString('hex');
+}
+
+function normalizeAgentSecret(value: unknown): string {
+  const supplied = typeof value === 'string' ? value.trim() : '';
+  return supplied.length >= AGENT_SECRET_MIN_LENGTH ? supplied : generateAgentSecret();
+}
+
 // Never falls back to raw ciphertext — see decryptNodeSecret().
 function decryptCredential(value: string): string {
   return decryptNodeSecret(value, config.encryptionKey);
@@ -52,11 +64,10 @@ router.post(
       let agentSecret: string | undefined;
 
       if (type === 'AGENT') {
-        const suppliedSecret = typeof req.body.credentials === 'string'
-          ? req.body.credentials.trim()
-          : '';
-
-        agentSecret = suppliedSecret || randomBytes(32).toString('hex');
+        // A short/blank value is never accepted as an AGENT secret. The Panel
+        // owns the credential lifecycle and must always issue a strong token
+        // that the node installer can accept.
+        agentSecret = normalizeAgentSecret(req.body.credentials);
         req.body = {
           ...req.body,
           type,
@@ -85,7 +96,7 @@ router.get('/:id/agent-credentials', authenticate, hasAdmin, async (req: Request
     }
 
     const secret = decryptCredential(node.credentials);
-    if (!secret || secret === 'none') {
+    if (!secret || secret === 'none' || secret.length < AGENT_SECRET_MIN_LENGTH) {
       return res.status(400).json({ error: 'No valid AGENT secret configured' });
     }
 
@@ -106,6 +117,16 @@ router.get('/:id/agent-credentials', authenticate, hasAdmin, async (req: Request
 
 router.put('/:id', authenticate, hasAdmin, auditLog('UPDATE', 'NODE'), async (req: AuthRequest, res: Response) => {
   try {
+    const existing = await NodeService.get(req.params.id);
+    const nextType = String(req.body.type ?? existing.type).trim().toUpperCase();
+
+    if (nextType === 'AGENT' && req.body.credentials !== undefined) {
+      const secret = String(req.body.credentials || '').trim();
+      if (!secret || secret.length < AGENT_SECRET_MIN_LENGTH) {
+        return res.status(400).json({ error: `AGENT credentials must be at least ${AGENT_SECRET_MIN_LENGTH} characters` });
+      }
+    }
+
     const node = await NodeService.update(req.params.id, req.body);
     res.json(publicNode(node));
   } catch (error: any) {
