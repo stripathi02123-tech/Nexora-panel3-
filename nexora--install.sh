@@ -19,7 +19,7 @@ NC='\033[0m'
 APP_NAME='Nexora Bot'
 SERVICE_NAME='nexora-bot'
 INSTALL_DIR='/opt/nexora'
-REPO_URL='https://github.com/stripathi02123-tech/Nexora-panel3.git'
+REPO_URL='https://github.com/stripathi02123-tech/Nexora-panel3-.git'
 BRANCH='main'
 NODE_MAJOR='22'
 
