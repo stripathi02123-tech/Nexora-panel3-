@@ -1,0 +1,75 @@
+name: Validate Nexora
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  panel:
+    name: Panel build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install server dependencies
+        working-directory: server
+        run: npm install --no-audit --no-fund
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+      - name: Generate Prisma client
+        working-directory: server
+        run: npx prisma generate
+      - name: Build server
+        run: npm run build:server
+      - name: Build client
+        run: npm run build:client
+
+  node-agent:
+    name: Node Agent checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: node-system/package.json
+      - name: Install Node Agent dependencies
+        working-directory: node-system
+        run: npm install --no-audit --no-fund
+      - name: Syntax check JavaScript
+        working-directory: node-system
+        run: |
+          set -e
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find src scripts -type f -name '*.js' -print0)
+
+  installers:
+    name: Installer syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Bash scripts
+        run: |
+          set -e
+          for file in nexora--install.sh uninstall-panel.sh install-node.sh node-system/install-node.sh node-system/uninstall-node.sh repair-panel.sh fix-panel-8080.sh; do
+            bash -n "$file"
+          done
