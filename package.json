@@ -1,0 +1,24 @@
+{
+  "name": "nexora",
+  "version": "1.0.0",
+  "description": "VPS Management Panel - Manage Proxmox VE, LXC, and Docker",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "db:generate": "cd server && npx prisma generate",
+    "db:push": "cd server && npx prisma db push",
+    "db:seed": "cd server && npx prisma db seed",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "setup": "npm run install:all && npm run db:generate && npm run db:push && npm run db:seed",
+    "setup:docker-tcp": "bash scripts/setup-docker-tcp.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
