@@ -1,0 +1,466 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  name            String
+  role            String   @default("USER")
+  isActive        Boolean  @default(true)
+  twoFactorSecret String?
+  avatar          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  apiKeys           ApiKey[]
+  auditLogs         AuditLog[]
+  virtualMachines   VirtualMachine[]
+  containers        Container[]
+  dockerContainers  DockerContainer[]
+  dockerComposes    DockerCompose[]
+  subscriptions     Subscription[]
+  invoices          Invoice[]
+  sshKeys           SshKey[]
+  domains           Domain[]
+  alerts            Alert[]
+  webhooks          Webhook[]
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  userId      String
+  name        String
+  permissions String    @default("read")
+  lastUsed    DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    String?
+  ip         String?
+  timestamp  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Node {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  host         String
+  port         Int      @default(8006)
+  type         String   @default("PROXMOX")
+  authType     String   @default("password")
+  credentials  String
+  status       String   @default("OFFLINE")
+  region       String?
+  locationId   String?
+  description  String?
+  storageTotal Float?
+  storageUsed  Float?
+  ramTotal     Float?
+  ramUsed      Float?
+  cpuCores     Int?
+  cpuUsage     Float?
+  version      String?
+  lastSeen     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  location         Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  virtualMachines  VirtualMachine[]
+  containers       Container[]
+  dockerContainers DockerContainer[]
+  dockerImages     DockerImage[]
+  dockerComposes   DockerCompose[]
+  networks         Network[]
+  metrics          Metric[]
+}
+
+model Location {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  city       String?
+  country    String?
+  datacenter String?
+  region     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  nodes Node[]
+}
+
+model VirtualMachine {
+  id             String    @id @default(uuid())
+  nodeId         String
+  proxmoxId      Int?
+  name           String
+  status         String    @default("stopped")
+  os             String?
+  template       String?
+  cpuCores       Int       @default(1)
+  ramMb          Int       @default(1024)
+  diskGb         Int       @default(20)
+  diskType       String    @default("virtio")
+  ipAddress      String?
+  macAddress     String?
+  bridge         String    @default("vmbr0")
+  vmid           Int?
+  userId         String?
+  planId         String?
+  backups        Int       @default(0)
+  snapshots      Int       @default(0)
+  autoBackup     Boolean   @default(false)
+  backupSchedule String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  node        Node          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan        Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
+  snapshotList  Snapshot[]    @relation("VMSnapshots")
+  backupList    Backup[]      @relation("VMBackups")
+  firewallRules FirewallRule[] @relation("VMFirewallRules")
+  metrics       Metric[]
+}
+
+model Container {
+  id         String   @id @default(uuid())
+  nodeId     String
+  proxmoxId  Int?
+  name       String
+  status     String   @default("stopped")
+  template   String?
+  cpuCores   Int      @default(1)
+  ramMb      Int      @default(512)
+  diskGb     Int      @default(8)
+  ipAddress  String?
+  bridge     String   @default("vmbr0")
+  vmid       Int?
+  userId     String?
+  planId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  node          Node          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan          Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
+  snapshots     Snapshot[]    @relation("ContainerSnapshots")
+  backups       Backup[]      @relation("ContainerBackups")
+  firewallRules FirewallRule[] @relation("ContainerFirewallRules")
+  metrics       Metric[]
+}
+
+model DockerContainer {
+  id               String   @id @default(uuid())
+  nodeId           String
+  containerId      String?
+  name             String
+  image            String
+  status           String   @default("created")
+  ports            String?
+  env              String?
+  mounts           String?
+  network          String?
+  restartPolicy    String   @default("no")
+  allocatedRamMB   Float?
+  allocatedCpuCores Float?
+  allocatedDiskGB  Float?
+  type             String   @default("vps")
+  sshPort          Int?
+  userId           String?
+  planId           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  node Node @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan Plan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+}
+
+model DockerImage {
+  id        String   @id @default(uuid())
+  nodeId    String
+  imageId   String?
+  name      String
+  tag       String   @default("latest")
+  size      Float?
+  created   DateTime @default(now())
+
+  node Node @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+}
+
+model DockerCompose {
+  id         String   @id @default(uuid())
+  nodeId     String
+  name       String
+  file       String
+  status     String   @default("stopped")
+  containers String?
+  userId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  node Node @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Plan {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  description       String?
+  price             Float    @default(0)
+  vmCpuLimit        Int?
+  vmRamLimit        Int?
+  vmDiskLimit       Int?
+  containerCpuLimit Int?
+  containerRamLimit Int?
+  containerDiskLimit Int?
+  dockerLimit       Int?
+  bandwidthLimit    Int?
+  backupLimit       Int?
+  snapshotLimit     Int?
+  features          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  virtualMachines  VirtualMachine[]
+  containers       Container[]
+  dockerContainers DockerContainer[]
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  userId         String
+  planId         String
+  status         String   @default("ACTIVE")
+  startDate      DateTime @default(now())
+  endDate        DateTime?
+  autoRenew      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+}
+
+model Invoice {
+  id             String    @id @default(uuid())
+  userId         String
+  subscriptionId String?
+  amount         Float
+  status         String    @default("PENDING")
+  dueDate        DateTime?
+  paidAt         DateTime?
+  items          String?
+  createdAt      DateTime  @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+}
+
+model Snapshot {
+  id          String   @id @default(uuid())
+  vmId        String?
+  containerId String?
+  name        String
+  description String?
+  size        Float?
+  type        String   @default("snapshot")
+  created     DateTime @default(now())
+  status      String   @default("completed")
+
+  vm        VirtualMachine? @relation("VMSnapshots", fields: [vmId], references: [id], onDelete: Cascade)
+  container Container?      @relation("ContainerSnapshots", fields: [containerId], references: [id], onDelete: Cascade)
+}
+
+model Backup {
+  id          String   @id @default(uuid())
+  vmId        String?
+  containerId String?
+  name        String
+  description String?
+  size        Float?
+  type        String   @default("full")
+  location    String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  vm        VirtualMachine? @relation("VMBackups", fields: [vmId], references: [id], onDelete: Cascade)
+  container Container?      @relation("ContainerBackups", fields: [containerId], references: [id], onDelete: Cascade)
+}
+
+model FirewallRule {
+  id          String  @id @default(uuid())
+  vmId        String?
+  containerId String?
+  name        String
+  rule        String?
+  direction   String  @default("INBOUND")
+  action      String  @default("ALLOW")
+  protocol    String  @default("tcp")
+  sourcePort  Int?
+  destPort    Int?
+  sourceIp    String?
+  destIp      String?
+  priority    Int     @default(0)
+  enabled     Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  vm        VirtualMachine? @relation("VMFirewallRules", fields: [vmId], references: [id], onDelete: Cascade)
+  container Container?      @relation("ContainerFirewallRules", fields: [containerId], references: [id], onDelete: Cascade)
+}
+
+model Network {
+  id        String   @id @default(uuid())
+  nodeId    String
+  name      String
+  bridge    String?
+  vlan      Int?
+  subnet    String?
+  gateway   String?
+  dns       String?
+  dhcpRange String?
+  ipPool    String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  node    Node        @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  ipAddresses IPAddress[]
+}
+
+model IPAddress {
+  id         String  @id @default(uuid())
+  networkId  String
+  vmId       String?
+  containerId String?
+  address    String
+  type       String  @default("IPV4")
+  isAvailable Boolean @default(true)
+  createdAt  DateTime @default(now())
+
+  network Network @relation(fields: [networkId], references: [id], onDelete: Cascade)
+}
+
+model SshKey {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  publicKey   String
+  fingerprint String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  target    String?
+  type      String   @default("A")
+  ttl       Int      @default(3600)
+  createdAt DateTime @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dnsRecords DnsRecord[]
+}
+
+model DnsRecord {
+  id        String   @id @default(uuid())
+  domainId  String
+  name      String
+  type      String   @default("A")
+  value     String
+  ttl       Int      @default(3600)
+  priority  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  metric        String   @default("CPU")
+  condition     String   @default("GT")
+  threshold     Float
+  enabled       Boolean  @default(true)
+  notifyEmail   String?
+  notifyWebhook String?
+  lastTriggered DateTime?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  url       String
+  secret    String?
+  events    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs  WebhookLog[]
+}
+
+model WebhookLog {
+  id        String   @id @default(uuid())
+  webhookId String
+  event     String
+  status    Int?
+  response  String?
+  createdAt DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}
+
+model Metric {
+  id         String   @id @default(uuid())
+  nodeId     String?
+  vmId       String?
+  containerId String?
+  type       String   @default("system")
+  cpu        Float?
+  ram        Float?
+  disk       Float?
+  networkRx  Float?
+  networkTx  Float?
+  timestamp  DateTime @default(now())
+
+  node      Node?            @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  vm        VirtualMachine?  @relation(fields: [vmId], references: [id], onDelete: Cascade)
+  container Container?       @relation(fields: [containerId], references: [id], onDelete: Cascade)
+}
+
+
+model LicenseActivation {
+  id          String   @id @default(uuid())
+  licenseKey  String
+  machineId   String
+  token       String?
+  status      String   @default("ACTIVE")
+  lastCheckAt DateTime?
+  activatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

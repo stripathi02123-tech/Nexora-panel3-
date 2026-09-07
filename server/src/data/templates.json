@@ -1,0 +1,369 @@
+[
+  {
+    "id": "minecraft-server",
+    "name": "Minecraft Server",
+    "category": "games",
+    "description": "Minecraft Java Edition server with automatic world generation, multiple game modes, and plugin support.",
+    "image": "itzg/minecraft-server",
+    "ports": [{ "containerPort": "25565", "protocol": "tcp" }],
+    "env": [
+      { "key": "EULA", "value": "TRUE" },
+      { "key": "DIFFICULTY", "value": "easy" },
+      { "key": "GAMEMODE", "value": "survival" },
+      { "key": "MAX_PLAYERS", "value": "20" },
+      { "key": "LEVEL_TYPE", "value": "DEFAULT" }
+    ],
+    "ramMB": 2048,
+    "cpuCores": 2,
+    "icon": "🎮"
+  },
+  {
+    "id": "nukkit-server",
+    "name": "Nukkit Minecraft Bedrock",
+    "category": "games",
+    "description": "Minecraft Bedrock/PE server using Nukkit, supporting plugins and multiple worlds.",
+    "image": "nukkit/nukkit",
+    "ports": [{ "containerPort": "19132", "protocol": "udp" }],
+    "env": [],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🎮"
+  },
+  {
+    "id": "terraria-server",
+    "name": "Terraria Server",
+    "category": "games",
+    "description": "Terraria dedicated server with auto world creation and configurable player slots.",
+    "image": "beardedio/terraria",
+    "ports": [{ "containerPort": "7777", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🎮"
+  },
+  {
+    "id": "valheim-server",
+    "name": "Valheim Server",
+    "category": "games",
+    "description": "Valheim dedicated server with world persistence, password protection, and crossplay support.",
+    "image": "lloesche/valheim-server",
+    "ports": [
+      { "containerPort": "2456", "protocol": "udp" },
+      { "containerPort": "2457", "protocol": "udp" }
+    ],
+    "env": [
+      { "key": "SERVER_NAME", "value": "My Valheim" },
+      { "key": "SERVER_PASS", "value": "secret" },
+      { "key": "WORLD_NAME", "value": "Dedicated" }
+    ],
+    "ramMB": 4096,
+    "cpuCores": 2,
+    "icon": "🎮"
+  },
+  {
+    "id": "factorio-server",
+    "name": "Factorio Server",
+    "category": "games",
+    "description": "Factorio headless server for multiplayer automation, with mod support and save management.",
+    "image": "factoriotools/factorio",
+    "ports": [{ "containerPort": "34197", "protocol": "udp" }],
+    "env": [],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🎮"
+  },
+  {
+    "id": "nginx",
+    "name": "Nginx Web Server",
+    "category": "web",
+    "description": "High-performance web server, reverse proxy, and load balancer. Serves static content with low overhead.",
+    "image": "nginx:alpine",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 128,
+    "cpuCores": 0.5,
+    "icon": "🌐"
+  },
+  {
+    "id": "apache",
+    "name": "Apache HTTP Server",
+    "category": "web",
+    "description": "Apache HTTP Server with PHP support, .htaccess, and virtual hosting capabilities.",
+    "image": "httpd:alpine",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "icon": "🌐"
+  },
+  {
+    "id": "nodejs-app",
+    "name": "Node.js Application",
+    "category": "web",
+    "description": "Node.js runtime for JavaScript applications. Supports Express, Next.js, and any Node framework.",
+    "image": "node:alpine",
+    "ports": [{ "containerPort": "3000", "protocol": "tcp" }],
+    "env": [
+      { "key": "NODE_ENV", "value": "production" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "command": "node /app/index.js",
+    "icon": "🟢"
+  },
+  {
+    "id": "python-web",
+    "name": "Python Web App",
+    "category": "web",
+    "description": "Python web application runtime. Supports Django, Flask, FastAPI, and any WSGI/ASGI framework.",
+    "image": "python:alpine",
+    "ports": [{ "containerPort": "8000", "protocol": "tcp" }],
+    "env": [
+      { "key": "PYTHONUNBUFFERED", "value": "1" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "command": "python -m http.server 8000",
+    "icon": "🐍"
+  },
+  {
+    "id": "wordpress",
+    "name": "WordPress",
+    "category": "web",
+    "description": "WordPress CMS with PHP 8, auto-configured with MySQL/MariaDB support and wp-cli.",
+    "image": "wordpress:latest",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [
+      { "key": "WORDPRESS_DB_HOST", "value": "db" },
+      { "key": "WORDPRESS_DB_USER", "value": "wordpress" },
+      { "key": "WORDPRESS_DB_PASSWORD", "value": "wordpress" },
+      { "key": "WORDPRESS_DB_NAME", "value": "wordpress" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "📝"
+  },
+  {
+    "id": "nextcloud",
+    "name": "Nextcloud",
+    "category": "web",
+    "description": "Self-hosted productivity platform with file sync, calendar, contacts, and collaborative editing.",
+    "image": "nextcloud:apache",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [
+      { "key": "NEXTCLOUD_ADMIN_USER", "value": "admin" },
+      { "key": "NEXTCLOUD_ADMIN_PASSWORD", "value": "admin123" }
+    ],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "☁️"
+  },
+  {
+    "id": "mysql",
+    "name": "MySQL Database",
+    "category": "databases",
+    "description": "MySQL 8 relational database with persistent storage, configurable cache, and InnoDB support.",
+    "image": "mysql:8",
+    "ports": [{ "containerPort": "3306", "protocol": "tcp" }],
+    "env": [
+      { "key": "MYSQL_ROOT_PASSWORD", "value": "root" },
+      { "key": "MYSQL_DATABASE", "value": "mydb" }
+    ],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🗄️"
+  },
+  {
+    "id": "postgresql",
+    "name": "PostgreSQL Database",
+    "category": "databases",
+    "description": "PostgreSQL 16 relational database with persistent storage, WAL archiving, and replication support.",
+    "image": "postgres:alpine",
+    "ports": [{ "containerPort": "5432", "protocol": "tcp" }],
+    "env": [
+      { "key": "POSTGRES_PASSWORD", "value": "postgres" },
+      { "key": "POSTGRES_DB", "value": "mydb" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "🐘"
+  },
+  {
+    "id": "mongodb",
+    "name": "MongoDB Database",
+    "category": "databases",
+    "description": "MongoDB 7 NoSQL document database with replica set support, persistent storage, and auth.",
+    "image": "mongo:7",
+    "ports": [{ "containerPort": "27017", "protocol": "tcp" }],
+    "env": [
+      { "key": "MONGO_INITDB_ROOT_USERNAME", "value": "admin" },
+      { "key": "MONGO_INITDB_ROOT_PASSWORD", "value": "admin" }
+    ],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🍃"
+  },
+  {
+    "id": "redis",
+    "name": "Redis Cache",
+    "category": "databases",
+    "description": "Redis in-memory data store for caching, queues, and session management with persistence.",
+    "image": "redis:alpine",
+    "ports": [{ "containerPort": "6379", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "command": "redis-server --appendonly yes",
+    "icon": "🔴"
+  },
+  {
+    "id": "mariadb",
+    "name": "MariaDB Database",
+    "category": "databases",
+    "description": "MariaDB 11 drop-in MySQL replacement with performance optimizations and persistent storage.",
+    "image": "mariadb:lts",
+    "ports": [{ "containerPort": "3306", "protocol": "tcp" }],
+    "env": [
+      { "key": "MARIADB_ROOT_PASSWORD", "value": "root" },
+      { "key": "MARIADB_DATABASE", "value": "mydb" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "🗄️"
+  },
+  {
+    "id": "portainer",
+    "name": "Portainer CE",
+    "category": "tools",
+    "description": "Docker management UI for container, image, volume, and network management with RBAC.",
+    "image": "portainer/portainer-ce",
+    "ports": [{ "containerPort": "9000", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "icon": "🐳"
+  },
+  {
+    "id": "phpmyadmin",
+    "name": "phpMyAdmin",
+    "category": "tools",
+    "description": "Web-based MySQL/MariaDB administration tool with database management and SQL query support.",
+    "image": "phpmyadmin:latest",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [
+      { "key": "PMA_ARBITRARY", "value": "1" }
+    ],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "icon": "🔧"
+  },
+  {
+    "id": "adminer",
+    "name": "Adminer",
+    "category": "tools",
+    "description": "Lightweight database management UI supporting MySQL, PostgreSQL, SQLite, and more.",
+    "image": "adminer:latest",
+    "ports": [{ "containerPort": "8080", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 128,
+    "cpuCores": 0.5,
+    "icon": "🔧"
+  },
+  {
+    "id": "n8n",
+    "name": "n8n Workflow Automation",
+    "category": "tools",
+    "description": "Fair-code workflow automation tool with 400+ integrations for connecting apps and services.",
+    "image": "n8nio/n8n",
+    "ports": [{ "containerPort": "5678", "protocol": "tcp" }],
+    "env": [
+      { "key": "N8N_SECURE_COOKIE", "value": "false" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "⚡"
+  },
+  {
+    "id": "vaultwarden",
+    "name": "Vaultwarden",
+    "category": "tools",
+    "description": "Lightweight Bitwarden-compatible password manager with web vault, attachments, and 2FA.",
+    "image": "vaultwarden/server",
+    "ports": [{ "containerPort": "80", "protocol": "tcp" }],
+    "env": [
+      { "key": "SIGNUPS_ALLOWED", "value": "true" }
+    ],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "icon": "🔐"
+  },
+  {
+    "id": "gitea",
+    "name": "Gitea",
+    "category": "tools",
+    "description": "Self-hosted Git service with repository management, issue tracking, CI/CD, and wiki.",
+    "image": "gitea/gitea",
+    "ports": [{ "containerPort": "3000", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "🔀"
+  },
+  {
+    "id": "jellyfin",
+    "name": "Jellyfin Media Server",
+    "category": "tools",
+    "description": "Open-source media server for streaming movies, TV shows, music, and photos to any device.",
+    "image": "jellyfin/jellyfin",
+    "ports": [{ "containerPort": "8096", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 1024,
+    "cpuCores": 1,
+    "icon": "🎬"
+  },
+  {
+    "id": "uptime-kuma",
+    "name": "Uptime Kuma",
+    "category": "tools",
+    "description": "Self-hosted uptime monitoring with notifications, status pages, and SSL certificate checks.",
+    "image": "louislam/uptime-kuma",
+    "ports": [{ "containerPort": "3001", "protocol": "tcp" }],
+    "env": [],
+    "ramMB": 256,
+    "cpuCores": 0.5,
+    "icon": "📊"
+  },
+  {
+    "id": "caddy",
+    "name": "Caddy Web Server",
+    "category": "web",
+    "description": "Automatic HTTPS web server with reverse proxy, file serving, and Let's Encrypt integration.",
+    "image": "caddy:alpine",
+    "ports": [
+      { "containerPort": "80", "protocol": "tcp" },
+      { "containerPort": "443", "protocol": "tcp" }
+    ],
+    "env": [],
+    "ramMB": 128,
+    "cpuCores": 0.5,
+    "icon": "🌐"
+  },
+  {
+    "id": "rabbitmq",
+    "name": "RabbitMQ",
+    "category": "tools",
+    "description": "Message broker with AMQP, MQTT, and STOMP support. Includes management UI on port 15672.",
+    "image": "rabbitmq:management-alpine",
+    "ports": [
+      { "containerPort": "5672", "protocol": "tcp" },
+      { "containerPort": "15672", "protocol": "tcp" }
+    ],
+    "env": [
+      { "key": "RABBITMQ_DEFAULT_USER", "value": "admin" },
+      { "key": "RABBITMQ_DEFAULT_PASS", "value": "admin" }
+    ],
+    "ramMB": 512,
+    "cpuCores": 1,
+    "icon": "📨"
+  }
+]
