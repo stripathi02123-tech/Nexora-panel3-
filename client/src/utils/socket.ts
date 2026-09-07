@@ -2,10 +2,28 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
+function getSocketUrl(): string | undefined {
+  const configured = String(import.meta.env.VITE_SOCKET_URL || '').trim();
+  if (configured) return configured.replace(/\/+$/, '');
+
+  const apiUrl = String(import.meta.env.VITE_API_URL || '').trim();
+  if (/^https?:\/\//i.test(apiUrl)) {
+    try {
+      return new URL(apiUrl).origin;
+    } catch {
+      // Fall back to same-origin when the configured API URL is invalid.
+    }
+  }
+
+  return undefined;
+}
+
 export const connectSocket = (token: string): Socket => {
   if (socket?.connected) return socket;
 
-  socket = io('/', {
+  const socketUrl = getSocketUrl();
+
+  socket = io(socketUrl || '/', {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,
