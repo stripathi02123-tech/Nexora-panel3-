@@ -79,9 +79,9 @@ router.post(
       }
 
       const node = await NodeService.create(req.body);
-      res.status(201).json(agentSecret ? { ...node, agentSecret } : node);
+      return res.status(201).json(agentSecret ? { ...node, agentSecret } : node);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   },
 );
@@ -101,17 +101,15 @@ router.get('/:id/agent-credentials', authenticate, hasAdmin, async (req: Request
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    res.json({
+    return res.json({
       id: node.id,
       name: node.name,
       host: node.host,
       port: node.port,
       credentials: secret,
     });
-    return;
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
-    return;
+    return res.status(400).json({ error: error.message });
   }
 });
 
@@ -128,54 +126,54 @@ router.put('/:id', authenticate, hasAdmin, auditLog('UPDATE', 'NODE'), async (re
     }
 
     const node = await NodeService.update(req.params.id, req.body);
-    res.json(publicNode(node));
+    return res.json(publicNode(node));
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
 router.delete('/:id', authenticate, hasAdmin, auditLog('DELETE', 'NODE'), async (req: AuthRequest, res: Response) => {
   try {
     await NodeService.delete(req.params.id);
-    res.json({ message: 'Node deleted' });
+    return res.json({ message: 'Node deleted' });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
 router.get('/:id/status', authenticate, async (req: Request, res: Response) => {
   try {
     const result = await NodeService.checkHealthDetailed(req.params.id);
-    res.json({ id: req.params.id, online: result.connected, error: result.error });
+    return res.json({ id: req.params.id, online: result.connected, error: result.error });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
 router.post('/:id/health', authenticate, hasAdmin, async (req: Request, res: Response) => {
   try {
     const result = await NodeService.checkHealthDetailed(req.params.id);
-    res.json({ id: req.params.id, online: result.connected, status: result.connected ? 'ONLINE' : 'OFFLINE', error: result.error });
+    return res.json({ id: req.params.id, online: result.connected, status: result.connected ? 'ONLINE' : 'OFFLINE', error: result.error });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
 router.get('/:id/metrics', authenticate, async (req: Request, res: Response) => {
   try {
     const metrics = await NodeService.getMetrics(req.params.id);
-    res.json(metrics);
+    return res.json(metrics);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
 router.get('/:id/storage', authenticate, async (req: Request, res: Response) => {
   try {
     const storage = await NodeService.getStorage(req.params.id);
-    res.json(storage);
+    return res.json(storage);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
@@ -183,9 +181,9 @@ router.get('/:id/templates', authenticate, async (req: Request, res: Response) =
   try {
     const type = (req.query.type as string) || 'vztmpl';
     const templates = await NodeService.getTemplates(req.params.id, type);
-    res.json(templates);
+    return res.json(templates);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
