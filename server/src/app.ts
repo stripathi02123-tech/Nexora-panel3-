@@ -37,16 +37,19 @@ import { setSocketIO } from './services/MonitoringService';
 const app = express();
 const httpServer = createServer(app);
 
-// CodeSandbox preview URLs are regenerated and can change between sessions.
-// Keep them restricted to HTTPS preview hosts on the common 8080/5173 ports.
-const codeSandboxOriginPattern = /^https:\/\/[a-z0-9-]+-(8080|5173)\.csb\.app$/i;
+// Development/preview environments can regenerate their hostname. Keep the
+// normal production CORS_ORIGIN allowlist exact, while allowing trusted
+// development hosts used by Vite/CodeSandbox without requiring a reinstall.
+const codeSandboxOriginPattern = /^https:\/\/[a-z0-9][a-z0-9-]*(?:-[0-9]+)?\.csb\.app(?::\d+)?$/i;
+const localDevelopmentOriginPattern = /^http:\/\/(?:localhost|127\.0\.0\.1):(5173|8080|8081)$/i;
 
 const isAllowedCorsOrigin = (origin: string | undefined): boolean => {
   if (!origin) return true;
   return (
     config.corsOrigins.includes('*') ||
     config.corsOrigins.includes(origin) ||
-    codeSandboxOriginPattern.test(origin)
+    codeSandboxOriginPattern.test(origin) ||
+    localDevelopmentOriginPattern.test(origin)
   );
 };
 
@@ -56,7 +59,7 @@ const allowCorsOrigin = (origin: string | undefined, callback: (err: Error | nul
     return;
   }
   logger.warn(
-    `CORS rejected request from origin "${origin}". Allowed origins: [${config.corsOrigins.join(', ')}] plus supported CodeSandbox preview origins. ` +
+    `CORS rejected request from origin "${origin}". Allowed origins: [${config.corsOrigins.join(', ')}] plus supported preview/development origins. ` +
     `If this origin is legitimate, add it to CORS_ORIGIN in server/.env (comma-separated for multiple) and restart the server.`
   );
   callback(new Error('Origin not allowed by CORS'));
