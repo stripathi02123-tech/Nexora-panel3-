@@ -37,22 +37,40 @@ import { setSocketIO } from './services/MonitoringService';
 const app = express();
 const httpServer = createServer(app);
 
+// CodeSandbox preview URLs are regenerated and can change between sessions.
+// Keep them restricted to HTTPS preview hosts on the common 8080/5173 ports.
+const codeSandboxOriginPattern = /^https:\/\/[a-z0-9-]+-(8080|5173)\.csb\.app$/i;
+
+const isAllowedCorsOrigin = (origin: string | undefined): boolean => {
+  if (!origin) return true;
+  return (
+    config.corsOrigins.includes('*') ||
+    config.corsOrigins.includes(origin) ||
+    codeSandboxOriginPattern.test(origin)
+  );
+};
+
 const allowCorsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  if (!origin || config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
+  if (isAllowedCorsOrigin(origin)) {
     callback(null, true);
     return;
   }
   logger.warn(
-    `CORS rejected request from origin "${origin}". Allowed origins: [${config.corsOrigins.join(', ')}]. ` +
-    `If this origin is legitimate (a domain, tunnel, or reverse proxy in front of the panel), add it to ` +
-    `CORS_ORIGIN in server/.env (comma-separated for multiple) and restart the server.`
+    `CORS rejected request from origin "${origin}". Allowed origins: [${config.corsOrigins.join(', ')}] plus supported CodeSandbox preview origins. ` +
+    `If this origin is legitimate, add it to CORS_ORIGIN in server/.env (comma-separated for multiple) and restart the server.`
   );
   callback(new Error('Origin not allowed by CORS'));
 };
 
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: config.corsOrigins.includes('*') ? '*' : config.corsOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedCorsOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origin not allowed by CORS'));
+    },
     methods: ['GET', 'POST'],
     credentials: !config.corsOrigins.includes('*'),
   },
