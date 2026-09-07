@@ -28,7 +28,8 @@ MAGENTA='\033[1;35m'
 NC='\033[0m'
 
 APP_NAME='Nexora Panel'
-SERVICE_NAME='nexora-bot'
+SERVICE_NAME='nexora-panel'
+LEGACY_SERVICE_NAME='nexora-bot'
 SERVICE_USER='nexora'
 INSTALL_DIR='/opt/nexora'
 BACKUP_DIR='/opt/nexora-backups'
@@ -42,6 +43,10 @@ info(){ echo -e "${CYAN}[INFO]${NC} $*"; }
 ok(){ echo -e "${GREEN}[OK]${NC} $*"; }
 warn(){ echo -e "${YELLOW}[WARNING]${NC} $*"; }
 error(){ echo -e "${RED}[ERROR]${NC} $*" >&2; }
+
+systemd_available(){
+  command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ] && [ "$(ps -p 1 -o comm= 2>/dev/null || true)" = 'systemd' ]
+}
 
 if [[ $EUID -ne 0 ]]; then
   error 'Run as root: sudo bash uninstall-panel.sh'
@@ -71,7 +76,7 @@ echo
 printf 'Panel directory : %s\n' "$INSTALL_DIR"
 printf 'Backup directory: %s\n' "$BACKUP_DIR"
 printf 'Log directory   : %s\n' "$LOG_DIR"
-printf 'Systemd service : %s\n' "$SERVICE_NAME"
+printf 'Service         : %s\n' "$SERVICE_NAME"
 printf 'Service user    : %s\n' "$SERVICE_USER"
 echo
 warn 'The separate Nexora Node Agent at /opt/nexora-node will NOT be removed.'
@@ -88,35 +93,38 @@ echo
 line
 
 info 'Stopping Nexora Panel...'
-if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+if systemd_available; then
   systemctl stop "$SERVICE_NAME" 2>/dev/null || true
   systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+  # Clean up installations created by older Nexora builds.
+  systemctl stop "$LEGACY_SERVICE_NAME" 2>/dev/null || true
+  systemctl disable "$LEGACY_SERVICE_NAME" 2>/dev/null || true
 fi
 
 if [[ -f "$PID_FILE" ]]; then
   PID="$(cat "$PID_FILE" 2>/dev/null || true)"
   if [[ "$PID" =~ ^[0-9]+$ ]] && kill -0 "$PID" 2>/dev/null; then
     kill "$PID" 2>/dev/null || true
-    sleep 1
+    for _ in {1..20}; do kill -0 "$PID" 2>/dev/null || break; sleep 0.25; done
     kill -9 "$PID" 2>/dev/null || true
   fi
 fi
 pkill -u "$SERVICE_USER" -f '/opt/nexora/server/dist/index.js' 2>/dev/null || true
-ok 'Panel process stopped.'
+ok 'Panel processes stopped.'
 
-info 'Removing service definition...'
-rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
-if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+info 'Removing service definitions...'
+rm -f "/etc/systemd/system/${SERVICE_NAME}.service" "/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
+if systemd_available; then
   systemctl daemon-reload 2>/dev/null || true
-  systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
+  systemctl reset-failed "$SERVICE_NAME" "$LEGACY_SERVICE_NAME" 2>/dev/null || true
 fi
-ok 'Service definition removed.'
+ok 'Service definitions removed.'
 
 info 'Removing Nexora Nginx configuration...'
 rm -f "$NGINX_LINK" "$NGINX_SITE"
 if command -v nginx >/dev/null 2>&1; then
   nginx -t >/dev/null 2>&1 || warn 'Nginx config test failed after removing Nexora site.'
-  if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+  if systemd_available; then
     systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
   else
     nginx -s reload 2>/dev/null || true
@@ -147,7 +155,7 @@ info 'Final verification...'
 [[ ! -e "$INSTALL_DIR" ]] && ok "$INSTALL_DIR removed." || warn "$INSTALL_DIR still exists."
 [[ ! -e "$BACKUP_DIR" ]] && ok "$BACKUP_DIR removed." || warn "$BACKUP_DIR still exists."
 [[ ! -e "$LOG_DIR" ]] && ok "$LOG_DIR removed." || warn "$LOG_DIR still exists."
-[[ ! -e "/etc/systemd/system/${SERVICE_NAME}.service" ]] && ok 'Service file removed.' || warn 'Service file still exists.'
+[[ ! -e "/etc/systemd/system/${SERVICE_NAME}.service" && ! -e "/etc/systemd/system/${LEGACY_SERVICE_NAME}.service" ]] && ok 'Panel service files removed.' || warn 'A Nexora service file still exists.'
 [[ ! -e "$NGINX_SITE" && ! -e "$NGINX_LINK" ]] && ok 'Nexora Nginx site removed.' || warn 'Nexora Nginx site still exists.'
 if id -u "$SERVICE_USER" >/dev/null 2>&1; then warn "User $SERVICE_USER still exists."; else ok "User $SERVICE_USER removed."; fi
 if [[ -d /opt/nexora-node ]]; then info 'Nexora Node Agent preserved at /opt/nexora-node.'; fi
